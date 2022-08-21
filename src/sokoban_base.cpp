@@ -115,6 +115,17 @@ std::vector<int> SokobanGameState::get_unsolved_box_ids() const {
     return ids;
 }
 
+std::vector<int> SokobanGameState::get_all_box_ids() const {
+    std::vector<int> ids;
+    for (int i = 0; i < board.cols * board.rows; ++i) {
+        auto channel_items = board.get_channel_items(i);
+        if (channel_items[static_cast<int>(ElementTypes::kBox)]) {
+            ids.push_back(channel_items[static_cast<int>(ElementTypes::kBox)]);
+        }
+    }
+    return ids;
+}
+
 int SokobanGameState::get_box_index(int box_id) const {
     for (int i = 0; i < board.cols * board.rows; ++i) {
         if (board.item(static_cast<int>(ElementTypes::kBox), i) == box_id) {
@@ -129,6 +140,17 @@ std::vector<int> SokobanGameState::get_empty_goals() const {
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
         if (channel_items[static_cast<int>(ElementTypes::kGoal)] && !channel_items[static_cast<int>(ElementTypes::kBox)]) {
+            ids.push_back(i);
+        }
+    }
+    return ids;
+}
+
+std::vector<int> SokobanGameState::get_all_goals() const {
+    std::vector<int> ids;
+    for (int i = 0; i < board.cols * board.rows; ++i) {
+        auto channel_items = board.get_channel_items(i);
+        if (channel_items[static_cast<int>(ElementTypes::kGoal)]) {
             ids.push_back(i);
         }
     }

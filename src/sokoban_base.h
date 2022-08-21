@@ -116,10 +116,22 @@ public:
     std::vector<int> get_unsolved_box_ids() const;
 
     /**
+     * Get all ids for all boxes
+     * @return set of ids
+     */
+    std::vector<int> get_all_box_ids() const;
+
+    /**
      * Get all indices of empty goals
      * @return vector of indicies
      */
     std::vector<int> get_empty_goals() const;
+
+    /**
+     * Get all indices of all goals
+     * @return vector of indicies
+     */
+    std::vector<int> get_all_goals() const;
 
     /**
      * Get the agent index position, even if in exit
