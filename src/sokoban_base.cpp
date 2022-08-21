@@ -104,23 +104,23 @@ uint64_t SokobanGameState::get_hash() const {
     return board.zorb_hash;
 }
 
-std::vector<int> SokobanGameState::get_unsolved_box_ids() const {
-    std::vector<int> ids;
+std::unordered_set<int> SokobanGameState::get_unsolved_box_ids() const {
+    std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
         if (channel_items[static_cast<int>(ElementTypes::kBox)] && !channel_items[static_cast<int>(ElementTypes::kGoal)]) {
-            ids.push_back(channel_items[static_cast<int>(ElementTypes::kBox)]);
+            ids.insert(channel_items[static_cast<int>(ElementTypes::kBox)]);
         }
     }
     return ids;
 }
 
-std::vector<int> SokobanGameState::get_all_box_ids() const {
-    std::vector<int> ids;
+std::unordered_set<int> SokobanGameState::get_all_box_ids() const {
+    std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
         if (channel_items[static_cast<int>(ElementTypes::kBox)]) {
-            ids.push_back(channel_items[static_cast<int>(ElementTypes::kBox)]);
+            ids.insert(channel_items[static_cast<int>(ElementTypes::kBox)]);
         }
     }
     return ids;
@@ -135,23 +135,23 @@ int SokobanGameState::get_box_index(int box_id) const {
     return -1;
 }
 
-std::vector<int> SokobanGameState::get_empty_goals() const {
-    std::vector<int> ids;
+std::unordered_set<int> SokobanGameState::get_empty_goals() const {
+    std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
         if (channel_items[static_cast<int>(ElementTypes::kGoal)] && !channel_items[static_cast<int>(ElementTypes::kBox)]) {
-            ids.push_back(i);
+            ids.insert(i);
         }
     }
     return ids;
 }
 
-std::vector<int> SokobanGameState::get_all_goals() const {
-    std::vector<int> ids;
+std::unordered_set<int> SokobanGameState::get_all_goals() const {
+    std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
         if (channel_items[static_cast<int>(ElementTypes::kGoal)]) {
-            ids.push_back(i);
+            ids.insert(i);
         }
     }
     return ids;

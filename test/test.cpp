@@ -14,7 +14,7 @@ void test_play() {
 
     std::cout << state;
     std::cout << state.get_hash() << std::endl;
-    std::vector<int> box_ids = state.get_unsolved_box_ids();
+    auto box_ids = state.get_unsolved_box_ids();
     for (auto const & bi : box_ids) {
         std::cout << "(" << bi << ", " << state.get_box_index(bi) << "), ";
     }
@@ -41,7 +41,7 @@ void test_play() {
         }
         std::cout << state;
         std::cout << state.get_hash() << std::endl;
-        std::vector<int> box_ids = state.get_unsolved_box_ids();
+        auto box_ids = state.get_unsolved_box_ids();
         for (auto const & bi : box_ids) {
             std::cout << "(" << bi << ", " << state.get_box_index(bi) << "), ";
         }
