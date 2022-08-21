@@ -116,6 +116,12 @@ public:
     std::unordered_set<int> get_unsolved_box_ids() const;
 
     /**
+     * Get all ids for solved boxes
+     * @return set of ids
+     */
+    std::unordered_set<int> get_solved_box_ids() const;
+
+    /**
      * Get all ids for all boxes
      * @return set of ids
      */

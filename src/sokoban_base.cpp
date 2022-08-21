@@ -115,6 +115,17 @@ std::unordered_set<int> SokobanGameState::get_unsolved_box_ids() const {
     return ids;
 }
 
+std::unordered_set<int> SokobanGameState::get_solved_box_ids() const {
+    std::unordered_set<int> ids;
+    for (int i = 0; i < board.cols * board.rows; ++i) {
+        auto channel_items = board.get_channel_items(i);
+        if (channel_items[static_cast<int>(ElementTypes::kBox)] && channel_items[static_cast<int>(ElementTypes::kGoal)]) {
+            ids.insert(channel_items[static_cast<int>(ElementTypes::kBox)]);
+        }
+    }
+    return ids;
+}
+
 std::unordered_set<int> SokobanGameState::get_all_box_ids() const {
     std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
