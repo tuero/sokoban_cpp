@@ -23,7 +23,7 @@ using GameParameters = std::unordered_map<std::string, GameParameter>;
 static const GameParameters kDefaultGameParams{
     {"obs_show_ids", GameParameter(false)},    // Flag to show object ids in observation instead of binary channels
     {"rng_seed", GameParameter(0)},            // Seed for anything that uses the rng
-    {"game_board_str", GameParameter(std::string("|3|3|00|01|01|03|01|01|04|01|01|"))},    // Game board string
+    {"game_board_str", GameParameter(std::string("3|3|00|01|01|03|01|01|04|01|01"))},    // Game board string
 };
 
 // Shared global state information relevant to all states for the given game
