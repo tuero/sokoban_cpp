@@ -134,6 +134,12 @@ public:
     std::unordered_set<int> get_empty_goals() const;
 
     /**
+     * Get all indices of solved goals
+     * @return vector of indicies
+     */
+    std::unordered_set<int> get_solved_goals() const;
+
+    /**
      * Get all indices of all goals
      * @return vector of indicies
      */
