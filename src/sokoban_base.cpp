@@ -84,20 +84,33 @@ bool non_traversable(const std::array<int, 4> &channel_items) {
     return channel_items[static_cast<int>(ElementTypes::kBox)] || channel_items[static_cast<int>(ElementTypes::kWall)];
 }
 
+bool is_wall(const std::array<int, 4> &channel_items) {
+    return channel_items[static_cast<int>(ElementTypes::kWall)];
+}
+
 bool SokobanGameState::is_deadlocked() const {
     // Check each box for deadlock
     for (const auto &box_idx : get_unsolved_box_idxs()) {
-        bool non_traversable_N = non_traversable(board.get_channel_items(box_idx - board.cols));
-        bool non_traversable_S = non_traversable(board.get_channel_items(box_idx + board.cols));
-        bool non_traversable_E = non_traversable(board.get_channel_items(box_idx + 1));
-        bool non_traversable_W = non_traversable(board.get_channel_items(box_idx - 1));
+        // bool non_traversable_N = non_traversable(board.get_channel_items(box_idx - board.cols));
+        // bool non_traversable_S = non_traversable(board.get_channel_items(box_idx + board.cols));
+        // bool non_traversable_E = non_traversable(board.get_channel_items(box_idx + 1));
+        // bool non_traversable_W = non_traversable(board.get_channel_items(box_idx - 1));
+        bool is_wall_N = is_wall(board.get_channel_items(box_idx - board.cols));
+        bool is_wall_S = is_wall(board.get_channel_items(box_idx + board.cols));
+        bool is_wall_E = is_wall(board.get_channel_items(box_idx + 1));
+        bool is_wall_W = is_wall(board.get_channel_items(box_idx - 1));
 
         // Check corner case, i.e. non-traversable for pair of N/S and E/W
-        //    #
-        //   *#
+        // Non-traversible could mix up these 2 scenarios (left deadlock, right isn't)
+        //    #             #*
+        //   *#              *
         //  ###
-        if ((non_traversable_N && non_traversable_E) || (non_traversable_N && non_traversable_W) ||
-            (non_traversable_S && non_traversable_E) || (non_traversable_S && non_traversable_W)) {
+        // if ((non_traversable_N && non_traversable_E) || (non_traversable_N && non_traversable_W) ||
+        //     (non_traversable_S && non_traversable_E) || (non_traversable_S && non_traversable_W)) {
+        //     return true;
+        // }
+        if ((is_wall_N && is_wall_E) || (is_wall_N && is_wall_W) ||
+            (is_wall_S && is_wall_E) || (is_wall_S && is_wall_W)) {
             return true;
         }
 

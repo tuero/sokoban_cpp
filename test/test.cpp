@@ -37,6 +37,11 @@ void test_play() {
         std::cout << state;
         std::cout << state.get_hash() << std::endl;
         std::cout << state.is_deadlocked() << std::endl;
+        std::cout << "legal non-deadlocking actions: ";
+        for (auto const & a : state.legal_actions_no_deadlocks()) {
+            std::cout << a << " ";
+        }
+        std::cout << std::endl;
         auto box_ids = state.get_unsolved_box_ids();
         for (auto const & bi : box_ids) {
             std::cout << "(" << bi << ", " << state.get_box_index(bi) << "), ";
