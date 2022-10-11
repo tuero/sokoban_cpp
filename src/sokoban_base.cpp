@@ -39,7 +39,7 @@ void SokobanGameState::reset() {
         for (int channel = 0; channel < (int)channel_items.size(); ++channel) {
             if (channel_items[channel] > 0) {
                 board.zorb_hash ^= shared_state_ptr->zrbht.at((channel * board.cols * board.rows) + i);
-            } 
+            }
         }
     }
 }
@@ -68,7 +68,8 @@ bool SokobanGameState::is_solution() const {
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
         // Box on grid without also being ontop of goal
-        if (channel_items[static_cast<int>(ElementTypes::kBox)] && !channel_items[static_cast<int>(ElementTypes::kGoal)]) {
+        if (channel_items[static_cast<int>(ElementTypes::kBox)] &&
+            !channel_items[static_cast<int>(ElementTypes::kGoal)]) {
             return false;
         }
     }
@@ -79,13 +80,86 @@ std::vector<int> SokobanGameState::legal_actions() const {
     return {Directions::kUp, Directions::kRight, Directions::kDown, Directions::kLeft};
 }
 
+bool non_traversable(const std::array<int, 4> &channel_items) {
+    return channel_items[static_cast<int>(ElementTypes::kBox)] || channel_items[static_cast<int>(ElementTypes::kWall)];
+}
+
+bool SokobanGameState::is_deadlocked() const {
+    // Check each box for deadlock
+    for (const auto &box_idx : get_unsolved_box_idxs()) {
+        bool non_traversable_N = non_traversable(board.get_channel_items(box_idx - board.cols));
+        bool non_traversable_S = non_traversable(board.get_channel_items(box_idx + board.cols));
+        bool non_traversable_E = non_traversable(board.get_channel_items(box_idx + 1));
+        bool non_traversable_W = non_traversable(board.get_channel_items(box_idx - 1));
+
+        // Check corner case, i.e. non-traversable for pair of N/S and E/W
+        //    #
+        //   *#
+        //  ###
+        if ((non_traversable_N && non_traversable_E) || (non_traversable_N && non_traversable_W) ||
+            (non_traversable_S && non_traversable_E) || (non_traversable_S && non_traversable_W)) {
+            return true;
+        }
+
+        // Check 2 rock case
+        //       #       #           #######       ####### 
+        //      .#       #.              * #       # *  
+        //     * #       # *              .#       #.   
+        // #######       #######           #       #     
+        auto check_two_rock = [&](const std::vector<int> &offsets) {
+            bool flag = true;
+            for (auto const &o : offsets) {
+                flag &= non_traversable(board.get_channel_items(box_idx + o));
+            }
+            return flag;
+        };
+        for (const auto &other_box_idx : get_all_box_idxs()) {
+            auto offset = box_idx - other_box_idx;
+            if (offset == -(board.cols - 1)) {
+                if (check_two_rock({2 * board.cols - 1, 2 * board.cols, 2 * board.cols + 1, board.cols + 1, 1})) {
+                    return true;
+                }
+            } else if (offset == -(board.cols + 1)) {
+                if (check_two_rock({2 * board.cols + 1, 2 * board.cols, 2 * board.cols - 1, board.cols - 1, -1})) {
+                    return true;
+                }
+            } else if (offset == (board.cols + 1)) {
+                if (check_two_rock({- (2 * board.cols + 1), -(2 * board.cols), -(2 * board.cols - 1), -(board.cols - 1), 1})) {
+                    return true;
+                }
+            } else if (offset == (board.cols - 1)) {
+                if (check_two_rock({-(2 * board.cols - 1), -(2 * board.cols), -(2 * board.cols + 1), -(board.cols + 1), -1})) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+std::vector<int> SokobanGameState::legal_actions_no_deadlocks() const {
+    std::vector<int> actions;
+
+    SokobanGameState temp_state(*this);
+    for (auto const &action : {Directions::kUp, Directions::kRight, Directions::kDown, Directions::kLeft}) {
+        temp_state.board = this->board;
+        temp_state.apply_action(action);
+        if (!temp_state.is_deadlocked()) {
+            actions.push_back(action);
+        }
+    }
+
+    return actions;
+}
+
 std::array<int, 3> SokobanGameState::observation_shape() const {
     // Empty doesn't get a channel, empty = all channels 0
     return {kNumElementTypes, board.cols, board.rows};
 }
 
 std::vector<float> SokobanGameState::get_observation() const {
-    std::vector<float> obs(kNumElementTypes* board.cols * board.rows, 0);
+    std::vector<float> obs(kNumElementTypes * board.cols * board.rows, 0);
     int channel_length = board.cols * board.rows;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
@@ -108,7 +182,8 @@ std::unordered_set<int> SokobanGameState::get_unsolved_box_ids() const {
     std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
-        if (channel_items[static_cast<int>(ElementTypes::kBox)] && !channel_items[static_cast<int>(ElementTypes::kGoal)]) {
+        if (channel_items[static_cast<int>(ElementTypes::kBox)] &&
+            !channel_items[static_cast<int>(ElementTypes::kGoal)]) {
             ids.insert(channel_items[static_cast<int>(ElementTypes::kBox)]);
         }
     }
@@ -119,7 +194,8 @@ std::unordered_set<int> SokobanGameState::get_solved_box_ids() const {
     std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
-        if (channel_items[static_cast<int>(ElementTypes::kBox)] && channel_items[static_cast<int>(ElementTypes::kGoal)]) {
+        if (channel_items[static_cast<int>(ElementTypes::kBox)] &&
+            channel_items[static_cast<int>(ElementTypes::kGoal)]) {
             ids.insert(channel_items[static_cast<int>(ElementTypes::kBox)]);
         }
     }
@@ -137,6 +213,41 @@ std::unordered_set<int> SokobanGameState::get_all_box_ids() const {
     return ids;
 }
 
+std::unordered_set<int> SokobanGameState::get_unsolved_box_idxs() const {
+    std::unordered_set<int> idxs;
+    for (int i = 0; i < board.cols * board.rows; ++i) {
+        auto channel_items = board.get_channel_items(i);
+        if (channel_items[static_cast<int>(ElementTypes::kBox)] &&
+            !channel_items[static_cast<int>(ElementTypes::kGoal)]) {
+            idxs.insert(i);
+        }
+    }
+    return idxs;
+}
+
+std::unordered_set<int> SokobanGameState::get_solved_box_idxs() const {
+    std::unordered_set<int> idxs;
+    for (int i = 0; i < board.cols * board.rows; ++i) {
+        auto channel_items = board.get_channel_items(i);
+        if (channel_items[static_cast<int>(ElementTypes::kBox)] &&
+            channel_items[static_cast<int>(ElementTypes::kGoal)]) {
+            idxs.insert(i);
+        }
+    }
+    return idxs;
+}
+
+std::unordered_set<int> SokobanGameState::get_all_box_idxs() const {
+    std::unordered_set<int> idxs;
+    for (int i = 0; i < board.cols * board.rows; ++i) {
+        auto channel_items = board.get_channel_items(i);
+        if (channel_items[static_cast<int>(ElementTypes::kBox)]) {
+            idxs.insert(i);
+        }
+    }
+    return idxs;
+}
+
 int SokobanGameState::get_box_index(int box_id) const {
     for (int i = 0; i < board.cols * board.rows; ++i) {
         if (board.item(static_cast<int>(ElementTypes::kBox), i) == box_id) {
@@ -150,7 +261,8 @@ std::unordered_set<int> SokobanGameState::get_empty_goals() const {
     std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
-        if (channel_items[static_cast<int>(ElementTypes::kGoal)] && !channel_items[static_cast<int>(ElementTypes::kBox)]) {
+        if (channel_items[static_cast<int>(ElementTypes::kGoal)] &&
+            !channel_items[static_cast<int>(ElementTypes::kBox)]) {
             ids.insert(i);
         }
     }
@@ -161,7 +273,8 @@ std::unordered_set<int> SokobanGameState::get_solved_goals() const {
     std::unordered_set<int> ids;
     for (int i = 0; i < board.cols * board.rows; ++i) {
         auto channel_items = board.get_channel_items(i);
-        if (channel_items[static_cast<int>(ElementTypes::kGoal)] && channel_items[static_cast<int>(ElementTypes::kBox)]) {
+        if (channel_items[static_cast<int>(ElementTypes::kGoal)] &&
+            channel_items[static_cast<int>(ElementTypes::kBox)]) {
             ids.insert(i);
         }
     }
@@ -234,7 +347,8 @@ bool SokobanGameState::IsTraversible(int index, int action) const {
     }
     int new_index = IndexFromAction(index, action);
     auto channel_items = board.get_channel_items(new_index);
-    return !channel_items[static_cast<int>(ElementTypes::kBox)] && !channel_items[static_cast<int>(ElementTypes::kWall)];
+    return !channel_items[static_cast<int>(ElementTypes::kBox)] &&
+           !channel_items[static_cast<int>(ElementTypes::kWall)];
 }
 
 bool SokobanGameState::IsPushable(int index, int action) const {
@@ -245,7 +359,7 @@ bool SokobanGameState::IsPushable(int index, int action) const {
     if (!board.item(static_cast<int>(ElementTypes::kBox), box_index)) {
         return false;
     }
-    
+
     // Check 1 past box in same direction
     return IsTraversible(box_index, action);
 }

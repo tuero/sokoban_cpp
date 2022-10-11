@@ -85,6 +85,18 @@ public:
     std::vector<int> legal_actions() const;
 
     /**
+     * Get the legal actions which can be applied in the state, minimal deadlock detection.
+     * @return vector containing each actions available
+     */
+    std::vector<int> legal_actions_no_deadlocks() const;
+
+    /**
+     * Check if the current state is in a known deadlock (simple)
+     * @return True if a known deadlock, false otherwise
+     */
+    bool is_deadlocked() const;
+
+    /**
      * Get the shape the observations should be viewed as.
      * @return vector indicating observation CHW
      */
@@ -126,6 +138,24 @@ public:
      * @return set of ids
      */
     std::unordered_set<int> get_all_box_ids() const;
+
+    /**
+     * Get all idxs for unsolved boxes
+     * @return set of idxs
+     */
+    std::unordered_set<int> get_unsolved_box_idxs() const;
+
+    /**
+     * Get all idxs for solved boxes
+     * @return set of idxs
+     */
+    std::unordered_set<int> get_solved_box_idxs() const;
+
+    /**
+     * Get all idxs for all boxes
+     * @return set of idxs
+     */
+    std::unordered_set<int> get_all_box_idxs() const;
 
     /**
      * Get all indices of empty goals

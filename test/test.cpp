@@ -1,13 +1,23 @@
 #include <sokoban/sokoban.h>
 
 #include <iostream>
+#include <unordered_map>
 
 using namespace sokoban;
 using namespace sokoban::util;
 
+const std::unordered_map<std::string, int> ActionMap{
+    {"w", 0},
+    {"d", 1},
+    {"s", 2},
+    {"a", 3},  
+};
+
 
 void test_play() {
-    const std::string board_str = "10|10|01|01|01|01|01|01|01|01|01|01|01|03|04|04|01|01|01|01|01|01|01|04|02|02|04|01|01|01|01|01|01|04|03|03|04|01|01|01|01|01|01|04|02|03|01|01|01|01|01|01|01|04|04|04|01|01|01|01|01|01|01|04|01|01|01|01|01|01|01|01|01|02|00|01|01|01|01|01|01|01|01|04|04|01|01|01|01|01|01|01|01|01|01|01|01|01|01|01|01|01";
+    std::string board_str;
+    std::cout << "Enter board str: ";
+    std::cin >> board_str;
     GameParameters params = kDefaultGameParams;
     params["game_board_str"] = GameParameter(board_str);
     SokobanGameState state(params);
@@ -20,27 +30,13 @@ void test_play() {
     }
     std::cout << std::endl;
     
-    int action;
+    std::string action_str;
     while (!state.is_solution()) {
-        std::cin >> action;
-        switch (action) {
-            case 8:
-                state.apply_action(0);
-                break;
-            case 6:
-                state.apply_action(1);
-                break;
-            case 2:
-                state.apply_action(2);
-                break;
-            case 4:
-                state.apply_action(3);
-                break;
-            default:
-                break;
-        }
+        std::cin >> action_str;
+        state.apply_action(ActionMap.find(action_str) == ActionMap.end() ? 0 : ActionMap.at(action_str));
         std::cout << state;
         std::cout << state.get_hash() << std::endl;
+        std::cout << state.is_deadlocked() << std::endl;
         auto box_ids = state.get_unsolved_box_ids();
         for (auto const & bi : box_ids) {
             std::cout << "(" << bi << ", " << state.get_box_index(bi) << "), ";
