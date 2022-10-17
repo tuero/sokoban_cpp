@@ -1,7 +1,9 @@
 #include "sokoban_base.h"
 
 #include <cstdint>
+#include <queue>
 #include <type_traits>
+#include <unordered_set>
 
 #include "definitions.h"
 
@@ -15,6 +17,66 @@ SokobanGameState::SokobanGameState(const GameParameters &params)
 
 bool SokobanGameState::operator==(const SokobanGameState &other) const {
     return board == other.board;
+}
+
+// ---------------------------------------------------------------------------
+
+void bfs(int s, int rows, int cols, const std::vector<bool> &pathable_board, std::vector<bool> &reachability_set) {
+    std::array<int, 4> OFFSETS_4 = {-1, 1, -cols, cols};
+    std::queue<int> open;    // Tile idx + idx pulling from
+    std::unordered_set<int> open_set;
+    std::unordered_set<int> closed;
+    reachability_set.clear();
+    reachability_set.insert(reachability_set.end(), pathable_board.size(), false);
+
+    auto is_in_bounds = [&](int idx) {
+        int r = idx / cols;
+        int c = idx % cols;
+        return !(r < 0 || c < 0 || r >= rows || c >= cols);
+    };
+
+    open.push(s);
+    open_set.insert(s);
+    while (!open.empty()) {
+        int idx = open.front();
+        open.pop();
+        closed.insert(idx);
+        reachability_set[idx] = true;
+
+        // children
+        for (const auto &offset : OFFSETS_4) {
+            int child_idx = idx + offset;
+            if (!is_in_bounds(child_idx)) {
+                continue;
+            }
+            // blocked, or previously in open/closed
+            if (!pathable_board[child_idx] || open_set.find(child_idx) != open_set.end() ||
+                closed.find(child_idx) != closed.end()) {
+                continue;
+            }
+            // This should be safe because if we are walking out of bounds (wrapping around),
+            // the above would have caught it
+            if (!is_in_bounds(child_idx + offset)) {
+                continue;
+            }
+            if (pathable_board[child_idx + offset]) {
+                open.push(child_idx);
+            }
+        }
+    }
+}
+
+void SokobanGameState::init_deadlock_detection() {
+    shared_state_ptr->nondead_squares.clear();
+    std::vector<bool> pathable_board(board.rows * board.cols, false);
+    for (int i = 0; i < board.rows * board.cols; ++i) {
+        pathable_board[i] = board.item(static_cast<int>(ElementTypes::kWall), i) == 0;
+    }
+    for (const auto &goal_idx : get_all_goals()) {
+        std::vector<bool> reachability_set;
+        bfs(goal_idx, board.rows, board.cols, pathable_board, reachability_set);
+        shared_state_ptr->nondead_squares[goal_idx] = reachability_set;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -42,6 +104,17 @@ void SokobanGameState::reset() {
             }
         }
     }
+    init_deadlock_detection();
+
+    // for (auto const &[k, v] : shared_state_ptr->nondead_squares) {
+    //     std::cout << "goal " << k << ", idx: ";
+    //     for (int i = 0; i < (int)v.size(); ++i) {
+    //         if (v[i] == 0) {
+    //             std::cout << i << " ";
+    //         }
+    //     }
+    //     std::cout << std::endl;
+    // }
 }
 
 void SokobanGameState::apply_action(int action) {
@@ -80,25 +153,65 @@ std::vector<int> SokobanGameState::legal_actions() const {
     return {Directions::kUp, Directions::kRight, Directions::kDown, Directions::kLeft};
 }
 
-bool non_traversable(const std::array<int, 4> &channel_items) {
-    return channel_items[static_cast<int>(ElementTypes::kBox)] || channel_items[static_cast<int>(ElementTypes::kWall)];
-}
-
 bool is_wall(const std::array<int, 4> &channel_items) {
     return channel_items[static_cast<int>(ElementTypes::kWall)];
 }
 
+bool is_empty_goal(const std::array<int, 4> &channel_items) {
+    return channel_items[static_cast<int>(ElementTypes::kGoal)] && !channel_items[static_cast<int>(ElementTypes::kBox)];
+}
+
+bool is_complete_goal(const std::array<int, 4> &channel_items) {
+    return channel_items[static_cast<int>(ElementTypes::kGoal)] && channel_items[static_cast<int>(ElementTypes::kBox)];
+}
+
+bool non_traversable(const std::array<int, 4> &channel_items) {
+    // return is_wall(channel_items);
+    // return is_wall(channel_items) || is_complete_goal(channel_items);
+    return channel_items[static_cast<int>(ElementTypes::kBox)] || channel_items[static_cast<int>(ElementTypes::kWall)];
+}
+
 bool SokobanGameState::is_deadlocked() const {
+    // Check each goal if no boxes in non-dead squares
+    for (const auto &goal_idx : get_empty_goals()) {
+        bool flag = true;
+        for (const auto &box_idx : get_unsolved_box_idxs()) {
+            // Found a box that lies on a non-dead square
+            if (shared_state_ptr->nondead_squares[goal_idx][box_idx]) {
+                flag = false;
+                break;
+            }
+        }
+        if (flag) {
+            return true;
+        }
+    }
+
+    // Check each box to see if its contained in no-ones non-dead squares
+    for (const auto &box_idx : get_unsolved_box_idxs()) {
+        bool flag = true;
+        for (const auto &goal_idx : get_empty_goals()) {
+            // Found a goal that this rock can path to
+            if (shared_state_ptr->nondead_squares[goal_idx][box_idx]) {
+                flag = false;
+                break;
+            }
+        }
+        if (flag) {
+            return true;
+        }
+    }
+
     // Check each box for deadlock
     for (const auto &box_idx : get_unsolved_box_idxs()) {
         // bool non_traversable_N = non_traversable(board.get_channel_items(box_idx - board.cols));
         // bool non_traversable_S = non_traversable(board.get_channel_items(box_idx + board.cols));
         // bool non_traversable_E = non_traversable(board.get_channel_items(box_idx + 1));
         // bool non_traversable_W = non_traversable(board.get_channel_items(box_idx - 1));
-        bool is_wall_N = is_wall(board.get_channel_items(box_idx - board.cols));
-        bool is_wall_S = is_wall(board.get_channel_items(box_idx + board.cols));
-        bool is_wall_E = is_wall(board.get_channel_items(box_idx + 1));
-        bool is_wall_W = is_wall(board.get_channel_items(box_idx - 1));
+        // bool is_wall_N = is_wall(board.get_channel_items(box_idx - board.cols));
+        // bool is_wall_S = is_wall(board.get_channel_items(box_idx + board.cols));
+        // bool is_wall_E = is_wall(board.get_channel_items(box_idx + 1));
+        // bool is_wall_W = is_wall(board.get_channel_items(box_idx - 1));
 
         // Check corner case, i.e. non-traversable for pair of N/S and E/W
         // Non-traversible could mix up these 2 scenarios (left deadlock, right isn't)
@@ -107,18 +220,20 @@ bool SokobanGameState::is_deadlocked() const {
         //  ###
         // if ((non_traversable_N && non_traversable_E) || (non_traversable_N && non_traversable_W) ||
         //     (non_traversable_S && non_traversable_E) || (non_traversable_S && non_traversable_W)) {
+        //         std::cout << "bad idx " << box_idx << std::endl;
         //     return true;
         // }
-        if ((is_wall_N && is_wall_E) || (is_wall_N && is_wall_W) ||
-            (is_wall_S && is_wall_E) || (is_wall_S && is_wall_W)) {
-            return true;
-        }
+        // if ((is_wall_N && is_wall_E) || (is_wall_N && is_wall_W) || (is_wall_S && is_wall_E) ||
+        //     (is_wall_S && is_wall_W)) {
+        //     std::cout << "bad idx " << box_idx << std::endl;
+        //     return true;
+        // }
 
         // Check 2 rock case
-        //       #       #           #######       ####### 
-        //      .#       #.              * #       # *  
-        //     * #       # *              .#       #.   
-        // #######       #######           #       #     
+        //       #       #           #######       #######
+        //      .#       #.              * #       # *
+        //     * #       # *              .#       #.
+        // #######       #######           #       #
         auto check_two_rock = [&](const std::vector<int> &offsets) {
             bool flag = true;
             for (auto const &o : offsets) {
@@ -126,22 +241,37 @@ bool SokobanGameState::is_deadlocked() const {
             }
             return flag;
         };
+
         for (const auto &other_box_idx : get_all_box_idxs()) {
             auto offset = box_idx - other_box_idx;
             if (offset == -(board.cols - 1)) {
-                if (check_two_rock({2 * board.cols - 1, 2 * board.cols, 2 * board.cols + 1, board.cols + 1, 1})) {
+                // Down left
+                if (check_two_rock({2 * board.cols - 1, 2 * board.cols, 2 * board.cols + 1, board.cols + 1, 1}) &&
+                    !is_empty_goal(board.get_channel_items(box_idx + board.cols))) {
+                    // std::cout << "bad idx a " << box_idx << std::endl;
                     return true;
                 }
             } else if (offset == -(board.cols + 1)) {
-                if (check_two_rock({2 * board.cols + 1, 2 * board.cols, 2 * board.cols - 1, board.cols - 1, -1})) {
+                // Down right
+                if (check_two_rock({2 * board.cols + 1, 2 * board.cols, 2 * board.cols - 1, board.cols - 1, -1}) &&
+                    !is_empty_goal(board.get_channel_items(box_idx + board.cols))) {
+                    // std::cout << "bad idx b " << box_idx << std::endl;
                     return true;
                 }
             } else if (offset == (board.cols + 1)) {
-                if (check_two_rock({- (2 * board.cols + 1), -(2 * board.cols), -(2 * board.cols - 1), -(board.cols - 1), 1})) {
+                // Up left
+                if (check_two_rock(
+                        {-(2 * board.cols + 1), -(2 * board.cols), -(2 * board.cols - 1), -(board.cols - 1), 1}) &&
+                    !is_empty_goal(board.get_channel_items(box_idx - board.cols))) {
+                    // std::cout << "bad idx c " << box_idx << std::endl;
                     return true;
                 }
             } else if (offset == (board.cols - 1)) {
-                if (check_two_rock({-(2 * board.cols - 1), -(2 * board.cols), -(2 * board.cols + 1), -(board.cols + 1), -1})) {
+                // Up right
+                if (check_two_rock(
+                        {-(2 * board.cols - 1), -(2 * board.cols), -(2 * board.cols + 1), -(board.cols + 1), -1}) &&
+                    !is_empty_goal(board.get_channel_items(box_idx - board.cols))) {
+                    // std::cout << "bad idx d " << box_idx << std::endl;
                     return true;
                 }
             }

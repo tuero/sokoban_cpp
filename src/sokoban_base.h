@@ -42,6 +42,7 @@ struct SharedStateInfo {
     std::mt19937 gen;                           // Generator for RNG
     std::uniform_int_distribution<int> dist;    // Random int distribution
     std::unordered_map<int, uint64_t> zrbht;    // Zobrist hashing table
+    std::unordered_map<int, std::vector<bool>> nondead_squares;
 };
 
 // Information specific for the current game state
@@ -65,6 +66,8 @@ public:
      * Reset the environment to the state as given by the GameParameters
      */
     void reset();
+
+    void init_deadlock_detection();
 
     /**
      * Apply the action to the current state, and set the reward and signals.
