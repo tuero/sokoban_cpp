@@ -1,6 +1,7 @@
 #ifndef SOKOBAN_DEFS_H
 #define SOKOBAN_DEFS_H
 
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <string>
