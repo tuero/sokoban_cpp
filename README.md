@@ -28,3 +28,7 @@ link_libraries(sokoban)
 ## Level Format
 Levels are expected to be formatted as `|` delimited strings, where the first 2 entries are the rows/columns of the level,
 then the following `rows * cols` entries are the element ID (see `Element` in `definitions.h`).
+
+## Notice
+The image tile assets under `/tiles/` are taken from [Rocks'n'Diamonds](https://www.artsoft.org/). 
+A copy of the license for those materials can be found alongside the assets.
