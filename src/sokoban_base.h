@@ -75,7 +75,7 @@ public:
     /**
      * Reset the environment to the state as given by the GameParameters
      */
-    void reset() noexcept;
+    void reset();
 
     /**
      * Apply the action to the current state, and set the reward and signals.

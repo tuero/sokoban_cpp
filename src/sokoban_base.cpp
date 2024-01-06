@@ -39,7 +39,7 @@ const std::vector<Action> SokobanGameState::ALL_ACTIONS{Action::kUp, Action::kRi
 
 // ---------------------------------------------------------------------------
 
-void SokobanGameState::reset() noexcept {
+void SokobanGameState::reset() {
     // Board, local, and shared state info
     local_state = LocalState();
     parse_board_str(shared_state_ptr->game_board_str, local_state, shared_state_ptr);
