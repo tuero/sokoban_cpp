@@ -2,8 +2,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <exception>
-#include <type_traits>
 #include <unordered_set>
 
 #include "definitions.h"
@@ -293,7 +291,15 @@ auto SokobanGameState::get_agent_index() const noexcept -> std::size_t {
 std::ostream &operator<<(std::ostream &os, const SokobanGameState &state) {
     const auto rows = state.shared_state_ptr->rows;
     const auto cols = state.shared_state_ptr->cols;
+    const auto print_horz_boarder = [&]() {
+        for (std::size_t w = 0; w < cols + 2; ++w) {
+            os << "-";
+        }
+        os << std::endl;
+    };
+    print_horz_boarder();
     for (std::size_t h = 0; h < rows; ++h) {
+        os << "|";
         for (std::size_t w = 0; w < cols; ++w) {
             const auto idx = h * cols + w;
             int mask = 0;
@@ -309,8 +315,9 @@ std::ostream &operator<<(std::ostream &os, const SokobanGameState &state) {
                         : 0;
             os << kElementToStr.at(mask);
         }
-        os << std::endl;
+        os << "|" << std::endl;
     }
+    print_horz_boarder();
 
     return os;
 }
