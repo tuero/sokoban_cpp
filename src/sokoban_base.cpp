@@ -141,7 +141,7 @@ void SokobanGameState::get_observation(std::vector<float> &obs) const noexcept {
     const auto obs_size = (kNumElements - 1) * channel_size;
     obs.clear();
     obs.reserve(obs_size);
-    std::fill_n(std::back_inserter(obs), obs_size, 0);
+    std::fill_n(std::back_inserter(obs), obs_size, static_cast<float>(0));
 
     // Set wall and goal
     std::size_t i = 0;
