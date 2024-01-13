@@ -14,7 +14,7 @@ SharedStateInfo::SharedStateInfo(const GameParameters &params)
       obs_show_ids(std::get<bool>(params.at("obs_show_ids"))),
       rng_seed(std::get<int>(params.at("rng_seed"))),
       game_board_str(std::get<std::string>(params.at("game_board_str"))),
-      gen(rng_seed),
+      gen(static_cast<unsigned long>(rng_seed)),
       dist(0) {}
 
 auto SharedStateInfo::operator==(const SharedStateInfo &other) const noexcept -> bool {
@@ -45,7 +45,7 @@ void SokobanGameState::reset() {
     parse_board_str(shared_state_ptr->game_board_str, local_state, shared_state_ptr);
 
     // zorbist hashing
-    std::mt19937 gen(shared_state_ptr->rng_seed);
+    std::mt19937 gen(static_cast<unsigned long>(shared_state_ptr->rng_seed));
     std::uniform_int_distribution<uint64_t> dist(0);
     const auto channel_size = shared_state_ptr->rows * shared_state_ptr->cols;
     shared_state_ptr->zrbht.clear();
@@ -245,7 +245,7 @@ auto SokobanGameState::get_box_index(int box_id) const -> std::size_t {
     if (box_id < 0 || box_id >= static_cast<int>(local_state.box_indices.size())) {
         throw std::invalid_argument(std::string("Unknown box id: ") + std::to_string(box_id));
     }
-    return local_state.box_indices[box_id];
+    return local_state.box_indices[static_cast<std::size_t>(box_id)];
 }
 
 auto SokobanGameState::get_empty_goal_indices() const noexcept -> std::unordered_set<std::size_t> {
@@ -328,16 +328,16 @@ std::size_t SokobanGameState::IndexFromAction(std::size_t index, Action action) 
     auto col = index % shared_state_ptr->cols;
     auto row = (index - col) / shared_state_ptr->cols;
     const auto &offsets = kActionOffsets[to_underlying(action)];    // NOLINT(*-bounds-constant-array-index)
-    col += offsets.first;
-    row += offsets.second;
+    col = static_cast<std::size_t>(static_cast<int>(col) + offsets.first);
+    row = static_cast<std::size_t>(static_cast<int>(row) + offsets.second);
     return (shared_state_ptr->cols * row) + col;
 }
 
 bool SokobanGameState::InBounds(std::size_t index, Action action) const noexcept {
-    const auto rows = shared_state_ptr->rows;
-    const auto cols = shared_state_ptr->cols;
-    int col = static_cast<int>(index % cols);
-    int row = static_cast<int>((index - col) / cols);
+    const auto rows = static_cast<int>(shared_state_ptr->rows);
+    const auto cols = static_cast<int>(shared_state_ptr->cols);
+    int col = static_cast<int>(index) % cols;
+    int row = static_cast<int>((static_cast<int>(index) - col) / cols);
     const auto &offsets = kActionOffsets[to_underlying(action)];    // NOLINT(*-bounds-constant-array-index)
     col += offsets.first;
     row += offsets.second;
@@ -354,9 +354,9 @@ void SokobanGameState::MoveAgent(Action action) noexcept {
 }
 
 void SokobanGameState::MoveBox(std::size_t box_index, Action action) noexcept {
-    const auto box_id =
+    const auto box_id = static_cast<std::size_t>(
         std::distance(local_state.box_indices.begin(),
-                      std::find(local_state.box_indices.begin(), local_state.box_indices.end(), box_index));
+                      std::find(local_state.box_indices.begin(), local_state.box_indices.end(), box_index)));
     const auto flat_size = shared_state_ptr->rows * shared_state_ptr->cols;
     local_state.zorb_hash ^=
         shared_state_ptr->zrbht.at(static_cast<std::size_t>(Element::kBox) * flat_size + box_index);

@@ -1,7 +1,6 @@
 #include "util.h"
 
 #include <cassert>
-#include <exception>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -25,8 +24,8 @@ void parse_board_str(const std::string &board_str, LocalState &local_state,
     const int rows = std::stoi(seglist[0]);
     const int cols = std::stoi(seglist[1]);
     assert((int)seglist.size() == rows * cols + 2);
-    shared_state->rows = rows;
-    shared_state->cols = cols;
+    shared_state->rows = static_cast<std::size_t>(rows);
+    shared_state->cols = static_cast<std::size_t>(cols);
 
     // Parse grid
     int agent_counter = 0;
@@ -34,7 +33,7 @@ void parse_board_str(const std::string &board_str, LocalState &local_state,
     int goal_counter = 0;
     std::vector<std::size_t> box_indices;
     for (std::size_t i = 2; i < seglist.size(); ++i) {
-        const std::size_t el_idx = std::stoi(seglist[i]);
+        const auto el_idx = static_cast<std::size_t>(std::stoi(seglist[i]));
         if (el_idx >= kNumElements) {
             std::stringstream s;
             s << "Unknown element type: " << el_idx;
