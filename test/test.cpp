@@ -16,8 +16,7 @@ void test_play() {
     std::cout << sizeof(state) << std::endl;
     std::cout << state;
     std::cout << state.get_hash() << std::endl;
-    auto box_ids = state.get_unsolved_box_ids();
-    for (const auto &bi : box_ids) {
+    for (const auto &bi : state.get_unsolved_box_ids()) {
         std::cout << "(" << bi << ", " << state.get_box_index(bi) << "), ";
     }
     std::cout << std::endl;
@@ -44,8 +43,7 @@ void test_play() {
         }
         std::cout << state;
         std::cout << state.get_hash() << std::endl;
-        auto box_ids = state.get_unsolved_box_ids();
-        for (auto const &bi : box_ids) {
+        for (auto const &bi : state.get_unsolved_box_ids()) {
             std::cout << "(" << bi << ", " << state.get_box_index(bi) << "), ";
         }
         std::cout << std::endl;

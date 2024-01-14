@@ -9,8 +9,8 @@
 
 namespace sokoban {
 
-SharedStateInfo::SharedStateInfo(const GameParameters &params)
-    : params(params),
+SharedStateInfo::SharedStateInfo(GameParameters params_)
+    : params(std::move(params_)),
       obs_show_ids(std::get<bool>(params.at("obs_show_ids"))),
       rng_seed(std::get<int>(params.at("rng_seed"))),
       game_board_str(std::get<std::string>(params.at("game_board_str"))),

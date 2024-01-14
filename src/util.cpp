@@ -23,7 +23,7 @@ void parse_board_str(const std::string &board_str, LocalState &local_state,
     // Get general info
     const int rows = std::stoi(seglist[0]);
     const int cols = std::stoi(seglist[1]);
-    assert((int)seglist.size() == rows * cols + 2);
+    assert(static_cast<int>(seglist.size()) == rows * cols + 2);
     shared_state->rows = static_cast<std::size_t>(rows);
     shared_state->cols = static_cast<std::size_t>(cols);
 
