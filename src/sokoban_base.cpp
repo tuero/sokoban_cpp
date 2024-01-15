@@ -74,7 +74,17 @@ void SokobanGameState::reset() {
     }
 }
 
-void SokobanGameState::apply_action(Action action) noexcept {
+void SokobanGameState::apply_action(Action action) {
+    switch (action) {
+        case Action::kUp:
+        case Action::kRight:
+        case Action::kDown:
+        case Action::kLeft:
+            break;
+        default:
+            throw std::invalid_argument("Unknown action.");
+    }
+
     local_state.reward_signal = 0;
     // If action results not in bounds, don't do anything
     const auto agent_idx = local_state.agent_idx;
@@ -327,7 +337,7 @@ std::ostream &operator<<(std::ostream &os, const SokobanGameState &state) {
 std::size_t SokobanGameState::IndexFromAction(std::size_t index, Action action) const noexcept {
     auto col = index % shared_state_ptr->cols;
     auto row = (index - col) / shared_state_ptr->cols;
-    const auto &offsets = kActionOffsets[to_underlying(action)];    // NOLINT(*-bounds-constant-array-index)
+    const auto &offsets = kActionOffsets[static_cast<std::size_t>(action)];    // NOLINT(*-bounds-constant-array-index)
     col = static_cast<std::size_t>(static_cast<int>(col) + offsets.first);
     row = static_cast<std::size_t>(static_cast<int>(row) + offsets.second);
     return (shared_state_ptr->cols * row) + col;
@@ -338,7 +348,7 @@ bool SokobanGameState::InBounds(std::size_t index, Action action) const noexcept
     const auto cols = static_cast<int>(shared_state_ptr->cols);
     int col = static_cast<int>(index) % cols;
     int row = static_cast<int>((static_cast<int>(index) - col) / cols);
-    const auto &offsets = kActionOffsets[to_underlying(action)];    // NOLINT(*-bounds-constant-array-index)
+    const auto &offsets = kActionOffsets[static_cast<std::size_t>(action)];    // NOLINT(*-bounds-constant-array-index)
     col += offsets.first;
     row += offsets.second;
     return col >= 0 && col < static_cast<int>(cols) && row >= 0 && row < static_cast<int>(rows);

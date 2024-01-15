@@ -1,17 +1,12 @@
 #ifndef SOKOBAN_DEFS_H_
 #define SOKOBAN_DEFS_H_
 
-#include <array>
 #include <cassert>
-#include <cstdint>
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace sokoban {
 
 // Types of elements in the game
-enum class Element : std::size_t {
+enum class Element {
     kAgent = 0,
     kWall = 1,
     kBox = 2,
@@ -21,7 +16,7 @@ enum class Element : std::size_t {
 constexpr std::size_t kNumElements = 5;
 
 // Possible actions for the agent to take
-enum class Action : std::size_t {
+enum class Action {
     kUp = 0,
     kRight = 1,
     kDown = 2,
