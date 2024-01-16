@@ -75,15 +75,7 @@ void SokobanGameState::reset() {
 }
 
 void SokobanGameState::apply_action(Action action) {
-    switch (action) {
-        case Action::kUp:
-        case Action::kRight:
-        case Action::kDown:
-        case Action::kLeft:
-            break;
-        default:
-            throw std::invalid_argument("Unknown action.");
-    }
+    assert(is_valid_action(action));
 
     local_state.reward_signal = 0;
     // If action results not in bounds, don't do anything
