@@ -14,3 +14,6 @@ add_executable(sokoban_test_default test_default.cpp)
 target_link_libraries(sokoban_test_default PUBLIC sokoban)
 add_test(sokoban_test_default sokoban_test_default)
 
+add_executable(sokoban_test_serialize test_serialize.cpp)
+target_link_libraries(sokoban_test_serialize PUBLIC sokoban)
+add_test(sokoban_test_serialize sokoban_test_serialize)

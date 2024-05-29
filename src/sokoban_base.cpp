@@ -1,7 +1,14 @@
 #include "sokoban_base.h"
 
+#include <nop/serializer.h>
+#include <nop/utility/buffer_reader.h>
+#include <nop/utility/buffer_writer.h>
+#include <nop/utility/stream_reader.h>
+#include <nop/utility/stream_writer.h>
+
 #include <algorithm>
 #include <cstdint>
+#include <sstream>
 #include <unordered_set>
 
 #include "definitions.h"
@@ -10,12 +17,8 @@
 namespace sokoban {
 
 SharedStateInfo::SharedStateInfo(GameParameters params_)
-    : params(std::move(params_)),
-      obs_show_ids(std::get<bool>(params.at("obs_show_ids"))),
-      rng_seed(std::get<int>(params.at("rng_seed"))),
-      game_board_str(std::get<std::string>(params.at("game_board_str"))),
-      gen(static_cast<unsigned long>(rng_seed)),
-      dist(0) {}
+    : obs_show_ids(std::get<bool>(params_.at("obs_show_ids"))),
+      game_board_str(std::get<std::string>(params_.at("game_board_str"))) {}
 
 auto SharedStateInfo::operator==(const SharedStateInfo &other) const noexcept -> bool {
     return rows == other.rows && cols == other.cols && board_static == other.board_static;
@@ -35,17 +38,49 @@ auto SokobanGameState::operator==(const SokobanGameState &other) const noexcept 
     return local_state == other.local_state && *shared_state_ptr == *other.shared_state_ptr;
 }
 
+auto SokobanGameState::operator!=(const SokobanGameState &other) const noexcept -> bool {
+    return !(*this == other);
+}
+
 const std::vector<Action> SokobanGameState::ALL_ACTIONS{Action::kUp, Action::kRight, Action::kDown, Action::kLeft};
 
 // ---------------------------------------------------------------------------
 
-void SokobanGameState::reset() {
-    // Board, local, and shared state info
-    local_state = LocalState();
-    parse_board_str(shared_state_ptr->game_board_str, local_state, shared_state_ptr);
+SokobanGameState::SokobanGameState(const std::vector<uint8_t> &byte_data)
+    : shared_state_ptr(std::make_shared<SharedStateInfo>()) {
+    std::stringstream ss;
+    ss.write(reinterpret_cast<char const *>(byte_data.data()), std::streamsize(byte_data.size()));
+    nop::Deserializer<nop::StreamReader<std::stringstream>> deserializer{std::move(ss)};
+    deserializer.Read(&local_state);
+    SharedStateInfo &info = *shared_state_ptr;
+    deserializer.Read(&info);
+    InitZrbhtTable();
+}
 
+auto SokobanGameState::serialize() const -> std::vector<uint8_t> {
+    nop::Serializer<nop::StreamWriter<std::stringstream>> serializer;
+    serializer.Write(local_state);
+    const SharedStateInfo &info = *shared_state_ptr;
+    serializer.Write(info);
+    auto &ss = serializer.writer().stream();
+    // discover size of data in stream
+    ss.seekg(0, std::ios::beg);
+    auto bof = ss.tellg();
+    ss.seekg(0, std::ios::end);
+    auto stream_size = std::size_t(ss.tellg() - bof);
+    ss.seekg(0, std::ios::beg);
+
+    // make your vector long enough
+    std::vector<uint8_t> byte_data(stream_size);
+
+    // read directly in
+    ss.read(reinterpret_cast<char *>(byte_data.data()), std::streamsize(byte_data.size()));
+    return byte_data;
+}
+
+void SokobanGameState::InitZrbhtTable() noexcept {
     // zorbist hashing
-    std::mt19937 gen(static_cast<unsigned long>(shared_state_ptr->rng_seed));
+    std::mt19937 gen(static_cast<unsigned long>(0));
     std::uniform_int_distribution<uint64_t> dist(0);
     const auto channel_size = shared_state_ptr->rows * shared_state_ptr->cols;
     shared_state_ptr->zrbht.clear();
@@ -55,11 +90,20 @@ void SokobanGameState::reset() {
             shared_state_ptr->zrbht.push_back(dist(gen));
         }
     }
+}
+
+void SokobanGameState::reset() {
+    // Board, local, and shared state info
+    local_state = LocalState();
+    parse_board_str(shared_state_ptr->game_board_str, local_state, shared_state_ptr);
+
+    InitZrbhtTable();
 
     // Set initial hash
     // Wall, Goal, Empty
     std::size_t i = 0;
     local_state.zorb_hash = 0;
+    const auto channel_size = shared_state_ptr->rows * shared_state_ptr->cols;
     for (const auto &el : shared_state_ptr->board_static) {
         local_state.zorb_hash ^= shared_state_ptr->zrbht.at((static_cast<std::size_t>(el) * channel_size) + i);
         ++i;
