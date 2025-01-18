@@ -34,31 +34,56 @@ void parse_board_str(const std::string &board_str, LocalState &local_state,
     std::vector<std::size_t> box_indices;
     for (std::size_t i = 2; i < seglist.size(); ++i) {
         const auto el_idx = static_cast<std::size_t>(std::stoi(seglist[i]));
+        // 0 Agent
+        // 1 Wall
+        // 2 Box
+        // 3 Goal
+        // 4 Empty
+        // 5 Agent Goal
+        // 6 Box Goal
         if (el_idx >= kNumElements) {
             std::stringstream s;
             s << "Unknown element type: " << el_idx;
             throw std::invalid_argument(s.str());
         }
 
-        const auto element = static_cast<Element>(el_idx);
-        switch (element) {
-            case Element::kAgent:
-                local_state.agent_idx = i - 2;
-                shared_state->board_static.push_back(Element::kEmpty);
-                ++agent_counter;
-                break;
-            case Element::kBox:
-                box_indices.push_back(i - 2);
-                local_state.box_indices_set.insert(box_indices.back());
-                shared_state->board_static.push_back(Element::kEmpty);
-                ++box_counter;
-                break;
-            case Element::kGoal:
-                ++goal_counter;
-                [[fallthrough]];
-            case Element::kWall:
-            case Element::kEmpty:
-                shared_state->board_static.push_back(element);
+        {
+            switch (el_idx) {
+                case 0:    // Agent
+                    local_state.agent_idx = i - 2;
+                    shared_state->board_static.push_back(Element::kEmpty);
+                    ++agent_counter;
+                    break;
+                case 1:    // Wall
+                    shared_state->board_static.push_back(Element::kWall);
+                    break;
+                case 2:    // Box
+                    box_indices.push_back(i - 2);
+                    local_state.box_indices_set.insert(box_indices.back());
+                    shared_state->board_static.push_back(Element::kEmpty);
+                    ++box_counter;
+                    break;
+                case 3:    // Goal
+                    ++goal_counter;
+                    shared_state->board_static.push_back(Element::kGoal);
+                    break;
+                case 4:    // Empty
+                    shared_state->board_static.push_back(Element::kEmpty);
+                    break;
+                case 5:    // Agent on goal
+                    local_state.agent_idx = i - 2;
+                    shared_state->board_static.push_back(Element::kGoal);
+                    ++goal_counter;
+                    ++agent_counter;
+                    break;
+                case 6:    // Box on goal
+                    box_indices.push_back(i - 2);
+                    local_state.box_indices_set.insert(box_indices.back());
+                    shared_state->board_static.push_back(Element::kGoal);
+                    ++box_counter;
+                    ++goal_counter;
+                    break;
+            }
         }
     }
 
