@@ -14,6 +14,11 @@ enum class Element {
     kEmpty = 4,
 };
 constexpr std::size_t kNumElements = 5;
+constexpr std::size_t kNumChannelsCompact = 4;
+constexpr std::size_t kNumChannels = 7;
+
+constexpr std::size_t ChannelAgentOnGoal = 5;
+constexpr std::size_t ChannelBoxOnGoal = 6;
 
 // Possible actions for the agent to take
 enum class Action {

@@ -159,14 +159,54 @@ void SokobanGameState::legal_actions(std::vector<Action> &actions) const noexcep
     }
 }
 
-auto SokobanGameState::observation_shape() const noexcept -> std::array<std::size_t, 3> {
+auto SokobanGameState::observation_shape(bool compact) const noexcept -> std::array<std::size_t, 3> {
     // Empty doesn't get a channel, empty = all channels 0
-    return {kNumElements - 1, shared_state_ptr->cols, shared_state_ptr->rows};
+    return {compact ? kNumChannelsCompact : kNumChannels, shared_state_ptr->cols, shared_state_ptr->rows};
 }
 
-auto SokobanGameState::get_observation() const noexcept -> std::vector<float> {
+void SokobanGameState::_get_observation_non_compact(std::vector<float> &obs) const noexcept {
     const auto channel_size = shared_state_ptr->rows * shared_state_ptr->cols;
-    std::vector<float> obs((kNumElements - 1) * channel_size, 0);
+
+    // Set empty channel
+    for (std::size_t i = 0; i < shared_state_ptr->rows * shared_state_ptr->cols; ++i) {
+        obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + i] = 1;
+    }
+
+    // Set wall and goal (remove empty from these cells)
+    std::size_t i = 0;
+    for (const auto &el : shared_state_ptr->board_static) {
+        if (el == Element::kWall || el == Element::kGoal) {
+            obs[(static_cast<std::size_t>(el) * channel_size) + i] = 1;
+            obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + i] = 0;
+        }
+        ++i;
+    }
+
+    // Set agent
+    bool agent_on_goal = obs[(static_cast<std::size_t>(Element::kGoal) * channel_size) + local_state.agent_idx] == 1;
+    std::size_t agent_channel = agent_on_goal ? ChannelAgentOnGoal : static_cast<std::size_t>(Element::kAgent);
+    obs[(agent_channel * channel_size) + local_state.agent_idx] = 1;
+    obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + local_state.agent_idx] = 0;
+
+    // Set boxes
+    for (const auto &box_idx : local_state.box_indices) {
+        bool box_on_goal = obs[(static_cast<std::size_t>(Element::kGoal) * channel_size) + box_idx] == 1;
+        // Box channel is either box + goal or just box
+        std::size_t box_channel = box_on_goal ? ChannelBoxOnGoal : static_cast<std::size_t>(Element::kBox);
+        obs[(box_channel * channel_size) + box_idx] = 1;
+        // In any case, we clear empty channel
+        obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + box_idx] = 0;
+        // Goal needs to be cleared if box on goal
+        // If box not on goal, we just clear empty which we already did, to avoid branching
+        std::size_t goal_channel =
+            box_on_goal ? static_cast<std::size_t>(Element::kGoal) : static_cast<std::size_t>(Element::kEmpty);
+        obs[(goal_channel * channel_size) + box_idx] = 0;
+    }
+}
+
+void SokobanGameState::_get_observation_compact(std::vector<float> &obs) const noexcept {
+    const auto channel_size = shared_state_ptr->rows * shared_state_ptr->cols;
+
     // Set wall and goal
     std::size_t i = 0;
     for (const auto &el : shared_state_ptr->board_static) {
@@ -180,27 +220,30 @@ auto SokobanGameState::get_observation() const noexcept -> std::vector<float> {
     for (const auto &box_idx : local_state.box_indices) {
         obs[(static_cast<std::size_t>(Element::kBox) * channel_size) + box_idx] = 1;
     }
+}
+
+auto SokobanGameState::get_observation(bool compact) const noexcept -> std::vector<float> {
+    const auto channel_size = shared_state_ptr->rows * shared_state_ptr->cols;
+    std::vector<float> obs((compact ? kNumChannelsCompact : kNumChannels) * channel_size, 0);
+    if (compact) {
+        _get_observation_compact(obs);
+    } else {
+        _get_observation_non_compact(obs);
+    }
     return obs;
 }
-void SokobanGameState::get_observation(std::vector<float> &obs) const noexcept {
+
+void SokobanGameState::get_observation(std::vector<float> &obs, bool compact) const noexcept {
     const auto channel_size = shared_state_ptr->rows * shared_state_ptr->cols;
-    const auto obs_size = (kNumElements - 1) * channel_size;
+    const auto obs_size = (compact ? kNumChannelsCompact : kNumChannels) * channel_size;
     obs.clear();
     obs.reserve(obs_size);
     std::fill_n(std::back_inserter(obs), obs_size, static_cast<float>(0));
 
-    // Set wall and goal
-    std::size_t i = 0;
-    for (const auto &el : shared_state_ptr->board_static) {
-        if (el == Element::kWall || el == Element::kGoal) {
-            obs[(static_cast<std::size_t>(el) * channel_size) + i] = 1;
-        }
-        ++i;
-    }
-    // Set agent and boxes
-    obs[(static_cast<std::size_t>(Element::kAgent) * channel_size) + local_state.agent_idx] = 1;
-    for (const auto &box_idx : local_state.box_indices) {
-        obs[(static_cast<std::size_t>(Element::kBox) * channel_size) + box_idx] = 1;
+    if (compact) {
+        _get_observation_compact(obs);
+    } else {
+        _get_observation_non_compact(obs);
     }
 }
 

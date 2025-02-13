@@ -144,16 +144,20 @@ public:
 
     /**
      * Get the shape the observations should be viewed as.
+     * @param compact True to use compact representation. 4 channels used for agent, wall, box, and goal. If agent/box
+     * on goal, two channels have true values. If false, then 6 channels are used (agent, wall, box, goal, agent on
+     * goal, box on goal)
      * @return vector indicating observation CHW
      */
-    [[nodiscard]] auto observation_shape() const noexcept -> std::array<std::size_t, 3>;
+    [[nodiscard]] auto observation_shape(bool compact = true) const noexcept -> std::array<std::size_t, 3>;
 
     /**
      * Get a flat representation of the current state observation.
      * The observation should be viewed as the shape given by observation_shape().
+     * @param bool True to use compact representation
      * @return vector where 1 represents element at position
      */
-    [[nodiscard]] auto get_observation() const noexcept -> std::vector<float>;
+    [[nodiscard]] auto get_observation(bool compact = true) const noexcept -> std::vector<float>;
 
     /**
      * Get a flat representation of the current state observation, and store in the given vector.
@@ -161,8 +165,9 @@ public:
      * The observation should be viewed as the shape given by observation_shape(), where 1 represents the element at the
      * given position.
      * @param obs Vector to store the observation in
+     * @param bool True to use compact representation
      */
-    void get_observation(std::vector<float> &obs) const noexcept;
+    void get_observation(std::vector<float> &obs, bool compact = true) const noexcept;
 
     /**
      * Get the shape the image should be viewed as.
@@ -244,6 +249,8 @@ public:
     friend std::ostream &operator<<(std::ostream &os, const SokobanGameState &state);
 
 private:
+    void _get_observation_non_compact(std::vector<float> &obs) const noexcept;
+    void _get_observation_compact(std::vector<float> &obs) const noexcept;
     [[nodiscard]] std::size_t IndexFromAction(std::size_t index, Action action) const noexcept;
     [[nodiscard]] bool InBounds(std::size_t index, Action action) const noexcept;
     [[nodiscard]] bool IsTraversible(std::size_t index, Action action) const noexcept;
