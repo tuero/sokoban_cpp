@@ -1,0 +1,15 @@
+add_executable(sokoban_test test.cpp)
+target_link_libraries(sokoban_test PUBLIC sokoban)
+add_test(sokoban_test sokoban_test)
+
+add_executable(sokoban_test_default test_default.cpp)
+target_link_libraries(sokoban_test_default PUBLIC sokoban)
+add_test(sokoban_test_default sokoban_test_default)
+
+add_executable(sokoban_test_speed test_speed.cpp)
+target_link_libraries(sokoban_test_speed PUBLIC sokoban)
+add_test(sokoban_test_speed sokoban_test_speed)
+
+add_executable(sokoban_test_throughput test_throughput.cpp)
+target_link_libraries(sokoban_test_throughput PUBLIC sokoban)
+add_test(sokoban_test_throughput sokoban_test_throughput)

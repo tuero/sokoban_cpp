@@ -1,0 +1,16 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pysokoban"
+version = "0.1.0"
+description = "Python Sokoban bindings"
+dependencies = ["numpy"]
+
+[tool.scikit-build]
+wheel.packages = ["python/pysokoban"]
+build.targets = ["pysokoban"]
+cmake.build-type = "Release"
+cmake.args = ["-DCMAKE_CXX_FLAGS='-g -O2 -fno-omit-frame-pointer'"]
+cmake.verbose = true
