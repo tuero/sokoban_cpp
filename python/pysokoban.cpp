@@ -56,6 +56,7 @@ PYBIND11_MODULE(pysokoban, m) {
                  self.apply_action(static_cast<sokoban::Action>(action));
              })
         .def("is_solution", &T::is_solution)
+        .def("is_terminal", &T::is_solution)
         .def("observation_shape", &T::observation_shape)
         .def("observation_shape", [](const T &self) { return self.observation_shape(false); })
         .def("get_observation",
