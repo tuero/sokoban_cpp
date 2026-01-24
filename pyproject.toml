@@ -12,5 +12,7 @@ dependencies = ["numpy"]
 wheel.packages = ["python/pysokoban"]
 build.targets = ["pysokoban"]
 cmake.build-type = "Release"
-cmake.args = ["-DCMAKE_CXX_FLAGS='-g -O2 -fno-omit-frame-pointer'"]
+cmake.args = [
+    "-DBUILD_PYTHON_MODULE=ON -DCMAKE_CXX_FLAGS='-g -O2 -fno-omit-frame-pointer'",
+]
 cmake.verbose = true
