@@ -3,7 +3,9 @@
 
 #include <array>
 #include <cstdint>
+#include <format>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -32,11 +34,11 @@ public:
     };
 
     SokobanGameState() = delete;
-    SokobanGameState(const std::string &board_str);
-    SokobanGameState(InternalState &&internal_state);
+    SokobanGameState(const std::string& board_str);
+    SokobanGameState(InternalState&& internal_state);
 
-    auto operator==(const SokobanGameState &other) const noexcept -> bool;
-    auto operator!=(const SokobanGameState &other) const noexcept -> bool;
+    auto operator==(const SokobanGameState& other) const noexcept -> bool;
+    auto operator!=(const SokobanGameState& other) const noexcept -> bool;
 
     static inline std::string name = "sokoban";
 
@@ -140,20 +142,26 @@ public:
      */
     [[nodiscard]] auto get_agent_index() const noexcept -> int;
 
-    friend std::ostream &operator<<(std::ostream &os, const SokobanGameState &state);
+    friend std::ostream& operator<<(std::ostream& os, const SokobanGameState& state);
 
     [[nodiscard]] auto pack() const -> InternalState {
         std::vector<int> _board_static;
         _board_static.reserve(board_static.size());
-        for (const auto &el : board_static) {
+        for (const auto& el : board_static) {
             _board_static.push_back(static_cast<int>(el));
         }
-        return {rows, cols, agent_idx, zorb_hash, reward_signal, _board_static, is_box};
+        return {.rows = rows,
+                .cols = cols,
+                .agent_idx = agent_idx,
+                .hash = zorb_hash,
+                .reward_signal = reward_signal,
+                .board_static = _board_static,
+                .is_box = is_box};
     }
 
 private:
-    void _get_observation_non_compact(std::vector<float> &obs) const noexcept;
-    void _get_observation_compact(std::vector<float> &obs) const noexcept;
+    void _get_observation_non_compact(std::vector<float>& obs) const noexcept;
+    void _get_observation_compact(std::vector<float>& obs) const noexcept;
     [[nodiscard]] int IndexFromAction(int index, Action action) const noexcept;
     [[nodiscard]] bool InBounds(int index, Action action) const noexcept;
     [[nodiscard]] bool IsTraversible(int index, Action action) const noexcept;
@@ -172,5 +180,14 @@ private:
 };
 
 }    // namespace sokoban
+
+template <>
+struct std::formatter<sokoban::SokobanGameState> : std::formatter<std::string> {
+    auto format(sokoban::SokobanGameState s, format_context& ctx) const {
+        std::ostringstream oss;
+        oss << s;
+        return formatter<string>::format(std::format("{}", oss.str()), ctx);
+    }
+};
 
 #endif    // SOKOBAN_BASE_H_

@@ -1,5 +1,6 @@
 #include <sokoban/sokoban.h>
 
+#include <format>
 #include <iostream>
 #include <limits>
 
@@ -13,9 +14,9 @@ void test_play() {
     SokobanGameState state(board_str);
 
     std::cout << sizeof(state) << std::endl;
-    std::cout << state;
+    std::cout << std::format("{}", state);
     std::cout << state.get_hash() << std::endl;
-    for (const auto &bi : state.get_box_indices()) {
+    for (const auto& bi : state.get_box_indices()) {
         std::cout << bi << ", ";
     }
     std::cout << std::endl;
@@ -42,7 +43,7 @@ void test_play() {
         }
         std::cout << state;
         std::cout << state.get_hash() << std::endl;
-        for (auto const &bi : state.get_box_indices()) {
+        for (auto const& bi : state.get_box_indices()) {
             std::cout << bi << ", ";
         }
         std::cout << std::endl;

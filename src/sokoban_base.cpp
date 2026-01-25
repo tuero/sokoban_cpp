@@ -17,7 +17,7 @@ constexpr uint64_t SPLIT64_C1 = 0x9E3779B97f4A7C15;
 constexpr uint64_t SPLIT64_C2 = 0xBF58476D1CE4E5B9;
 constexpr uint64_t SPLIT64_C3 = 0x94D049BB133111EB;
 auto to_local_hash(int flat_size, Element el, int offset) noexcept -> uint64_t {
-    uint64_t seed = (flat_size * static_cast<int>(el)) + offset;
+    auto seed = static_cast<uint64_t>((flat_size * static_cast<int>(el)) + offset);
     uint64_t result = seed + SPLIT64_C1;
     result = (result ^ (result >> SPLIT64_S1)) * SPLIT64_C2;
     result = (result ^ (result >> SPLIT64_S2)) * SPLIT64_C3;
@@ -25,7 +25,7 @@ auto to_local_hash(int flat_size, Element el, int offset) noexcept -> uint64_t {
 }
 }    // namespace
 
-SokobanGameState::SokobanGameState(const std::string &board_str) {
+SokobanGameState::SokobanGameState(const std::string& board_str) {
     std::stringstream board_ss(board_str);
     std::string segment;
     std::vector<std::string> seglist;
@@ -126,7 +126,7 @@ SokobanGameState::SokobanGameState(const std::string &board_str) {
     // Static board
     {
         int i = -1;
-        for (const auto &el : board_static) {
+        for (const auto& el : board_static) {
             zorb_hash ^= to_local_hash(flat_size, el, ++i);
         }
     }
@@ -143,7 +143,7 @@ SokobanGameState::SokobanGameState(const std::string &board_str) {
     }
 }
 
-SokobanGameState::SokobanGameState(InternalState &&internal_state)
+SokobanGameState::SokobanGameState(InternalState&& internal_state)
     : rows(internal_state.rows),
       cols(internal_state.cols),
       agent_idx(internal_state.agent_idx),
@@ -152,17 +152,17 @@ SokobanGameState::SokobanGameState(InternalState &&internal_state)
       is_box(std::move(internal_state).is_box) {
     board_static.clear();
     board_static.reserve(internal_state.board_static.size());
-    for (const auto &el : internal_state.board_static) {
+    for (const auto& el : internal_state.board_static) {
         board_static.push_back(static_cast<Element>(el));
     }
 }
 
-auto SokobanGameState::operator==(const SokobanGameState &other) const noexcept -> bool {
+auto SokobanGameState::operator==(const SokobanGameState& other) const noexcept -> bool {
     return rows == other.rows && cols == other.cols && agent_idx == other.agent_idx &&
            board_static == other.board_static && is_box == other.is_box;
 }
 
-auto SokobanGameState::operator!=(const SokobanGameState &other) const noexcept -> bool {
+auto SokobanGameState::operator!=(const SokobanGameState& other) const noexcept -> bool {
     return !(*this == other);
 }
 
@@ -202,17 +202,17 @@ auto SokobanGameState::observation_shape(bool compact) const noexcept -> std::ar
     return {compact ? kNumChannelsCompact : kNumChannels, cols, rows};
 }
 
-void SokobanGameState::_get_observation_non_compact(std::vector<float> &obs) const noexcept {
-    const auto channel_size = rows * cols;
+void SokobanGameState::_get_observation_non_compact(std::vector<float>& obs) const noexcept {
+    const auto channel_size = static_cast<std::size_t>(rows * cols);
 
     // Set empty channel
-    for (int i = 0; i < channel_size; ++i) {
+    for (std::size_t i = 0; i < channel_size; ++i) {
         obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + i] = 1;
     }
 
     // Set wall and goal (remove empty from these cells)
     std::size_t i = 0;
-    for (const auto &el : board_static) {
+    for (const auto& el : board_static) {
         if (el == Element::kWall || el == Element::kGoal) {
             obs[(static_cast<std::size_t>(el) * channel_size) + i] = 1;
             obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + i] = 0;
@@ -221,13 +221,14 @@ void SokobanGameState::_get_observation_non_compact(std::vector<float> &obs) con
     }
 
     // Set agent
-    bool agent_on_goal = obs[(static_cast<std::size_t>(Element::kGoal) * channel_size) + agent_idx] == 1;
+    bool agent_on_goal =
+        obs[(static_cast<std::size_t>(Element::kGoal) * channel_size) + static_cast<std::size_t>(agent_idx)] == 1;
     std::size_t agent_channel = agent_on_goal ? ChannelAgentOnGoal : static_cast<std::size_t>(Element::kAgent);
-    obs[(agent_channel * channel_size) + agent_idx] = 1;
-    obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + agent_idx] = 0;
+    obs[(agent_channel * channel_size) + static_cast<std::size_t>(agent_idx)] = 1;
+    obs[(static_cast<std::size_t>(Element::kEmpty) * channel_size) + static_cast<std::size_t>(agent_idx)] = 0;
 
     // Set boxes
-    for (int box_idx = 0; box_idx < channel_size; ++box_idx) {
+    for (std::size_t box_idx = 0; box_idx < channel_size; ++box_idx) {
         if (!is_box[static_cast<std::size_t>(box_idx)]) {
             continue;
         }
@@ -245,20 +246,20 @@ void SokobanGameState::_get_observation_non_compact(std::vector<float> &obs) con
     }
 }
 
-void SokobanGameState::_get_observation_compact(std::vector<float> &obs) const noexcept {
-    const auto channel_size = rows * cols;
+void SokobanGameState::_get_observation_compact(std::vector<float>& obs) const noexcept {
+    const auto channel_size = static_cast<std::size_t>(rows * cols);
 
     // Set wall and goal
     std::size_t i = 0;
-    for (const auto &el : board_static) {
+    for (const auto& el : board_static) {
         if (el == Element::kWall || el == Element::kGoal) {
             obs[(static_cast<std::size_t>(el) * channel_size) + i] = 1;
         }
         ++i;
     }
     // Set agent and boxes
-    obs[(static_cast<std::size_t>(Element::kAgent) * channel_size) + agent_idx] = 1;
-    for (int box_idx = 0; box_idx < channel_size; ++box_idx) {
+    obs[(static_cast<std::size_t>(Element::kAgent) * channel_size) + static_cast<std::size_t>(agent_idx)] = 1;
+    for (std::size_t box_idx = 0; box_idx < channel_size; ++box_idx) {
         if (!is_box[static_cast<std::size_t>(box_idx)]) {
             continue;
         }
@@ -267,8 +268,8 @@ void SokobanGameState::_get_observation_compact(std::vector<float> &obs) const n
 }
 
 auto SokobanGameState::get_observation(bool compact) const noexcept -> std::vector<float> {
-    const auto channel_size = rows * cols;
-    std::vector<float> obs((compact ? kNumChannelsCompact : kNumChannels) * channel_size, 0);
+    const auto channel_size = static_cast<std::size_t>(rows * cols);
+    std::vector<float> obs(static_cast<std::size_t>(compact ? kNumChannelsCompact : kNumChannels) * channel_size, 0);
     if (compact) {
         _get_observation_compact(obs);
     } else {
@@ -285,23 +286,24 @@ auto SokobanGameState::image_shape() const noexcept -> std::array<int, 3> {
 }
 
 auto SokobanGameState::to_image() const noexcept -> std::vector<uint8_t> {
-    const auto flat_size = rows * cols;
+    const auto flat_size = static_cast<std::size_t>(rows * cols);
     std::vector<uint8_t> img(flat_size * SPRITE_DATA_LEN, 0);
     for (int h = 0; h < rows; ++h) {
         for (int w = 0; w < cols; ++w) {
-            const std::size_t img_idx_top_left = h * (SPRITE_DATA_LEN * cols) + (w * SPRITE_DATA_LEN_PER_ROW);
-            const auto idx = h * cols + w;
+            const auto img_idx_top_left =
+                static_cast<std::size_t>(h * (SPRITE_DATA_LEN * cols) + (w * SPRITE_DATA_LEN_PER_ROW));
+            const auto idx = static_cast<std::size_t>(h * cols + w);
             int flags = 0;
-            flags |= agent_idx == idx ? 1 << static_cast<int>(Element::kAgent) : 0;
+            flags |= static_cast<std::size_t>(agent_idx) == idx ? 1 << static_cast<int>(Element::kAgent) : 0;
             flags |= board_static.at(idx) == Element::kWall ? 1 << static_cast<int>(Element::kWall) : 0;
             flags |= board_static.at(idx) == Element::kGoal ? 1 << static_cast<int>(Element::kGoal) : 0;
             flags |= is_box[static_cast<std::size_t>(idx)] ? 1 << static_cast<int>(Element::kBox) : 0;
-            const std::vector<uint8_t> &data = img_asset_map.at(flags);
+            const std::vector<uint8_t>& data = img_asset_map.at(flags);
             for (std::size_t r = 0; r < SPRITE_HEIGHT; ++r) {
                 for (std::size_t c = 0; c < SPRITE_WIDTH; ++c) {
                     const std::size_t data_idx = (r * SPRITE_DATA_LEN_PER_ROW) + (3 * c);
-                    const std::size_t img_idx =
-                        (r * SPRITE_DATA_LEN_PER_ROW * cols) + (SPRITE_CHANNELS * c) + img_idx_top_left;
+                    const std::size_t img_idx = (r * SPRITE_DATA_LEN_PER_ROW * static_cast<std::size_t>(cols)) +
+                                                (SPRITE_CHANNELS * c) + img_idx_top_left;
                     img[img_idx + 0] = data[data_idx + 0];
                     img[img_idx + 1] = data[data_idx + 1];
                     img[img_idx + 2] = data[data_idx + 2];
@@ -364,7 +366,7 @@ auto SokobanGameState::get_agent_index() const noexcept -> int {
     return agent_idx;
 }
 
-auto operator<<(std::ostream &os, const SokobanGameState &state) -> std::ostream & {
+auto operator<<(std::ostream& os, const SokobanGameState& state) -> std::ostream& {
     const auto print_horz_boarder = [&]() {
         for (int w = 0; w < state.cols + 2; ++w) {
             os << "-";
@@ -375,9 +377,9 @@ auto operator<<(std::ostream &os, const SokobanGameState &state) -> std::ostream
     for (int h = 0; h < state.rows; ++h) {
         os << "|";
         for (int w = 0; w < state.cols; ++w) {
-            const auto idx = h * state.cols + w;
+            const auto idx = static_cast<std::size_t>(h * state.cols + w);
             int mask = 0;
-            mask |= idx == state.agent_idx ? 1 << static_cast<int>(Element::kAgent) : 0;
+            mask |= idx == static_cast<std::size_t>(state.agent_idx) ? 1 << static_cast<int>(Element::kAgent) : 0;
             mask |= state.board_static.at(idx) == Element::kWall ? 1 << static_cast<int>(Element::kWall) : 0;
             mask |= state.board_static.at(idx) == Element::kGoal ? 1 << static_cast<int>(Element::kGoal) : 0;
             mask |= state.is_box[static_cast<std::size_t>(idx)] ? 1 << static_cast<int>(Element::kBox) : 0;
@@ -395,7 +397,7 @@ auto operator<<(std::ostream &os, const SokobanGameState &state) -> std::ostream
 auto SokobanGameState::IndexFromAction(int index, Action action) const noexcept -> int {
     auto col = index % cols;
     auto row = (index - col) / cols;
-    const auto &offsets = kActionOffsets[static_cast<std::size_t>(action)];    // NOLINT(*-array-index)
+    const auto& offsets = kActionOffsets[static_cast<std::size_t>(action)];    // NOLINT(*-array-index)
     col += offsets.first;
     row += offsets.second;
     return (cols * row) + col;
@@ -404,7 +406,7 @@ auto SokobanGameState::IndexFromAction(int index, Action action) const noexcept 
 auto SokobanGameState::InBounds(int index, Action action) const noexcept -> bool {
     int col = index % cols;
     int row = (index - col) / cols;
-    const auto &offsets = kActionOffsets[static_cast<std::size_t>(action)];    // NOLINT(*-array-index)
+    const auto& offsets = kActionOffsets[static_cast<std::size_t>(action)];    // NOLINT(*-array-index)
     col += offsets.first;
     row += offsets.second;
     return col >= 0 && col < static_cast<int>(cols) && row >= 0 && row < static_cast<int>(rows);
@@ -428,7 +430,7 @@ void SokobanGameState::MoveBox(int box_index, Action action) noexcept {
     is_box[static_cast<std::size_t>(box_new_index)] = true;
 
     // Check if on goal
-    const bool box_on_goal = board_static.at(box_new_index) == Element::kGoal;
+    const bool box_on_goal = board_static.at(static_cast<std::size_t>(box_new_index)) == Element::kGoal;
     reward_signal = box_on_goal ? 1 : 0;
 }
 

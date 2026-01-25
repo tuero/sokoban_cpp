@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.23)
 
-project(sokoban VERSION 1.0.1)
+project(sokoban VERSION 1.0.2)
 
 option(BUILD_PYTHON_MODULE "Build the python library wrapper" OFF)
 
@@ -23,7 +23,7 @@ set_target_properties(sokoban PROPERTIES
 )
 target_include_directories(
     sokoban PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
-target_compile_features(sokoban PUBLIC cxx_std_17)
+target_compile_features(sokoban PUBLIC cxx_std_20)
 target_sources(sokoban PRIVATE src/definitions.h src/sokoban_base.cpp src/sokoban_base.h)
 
 
