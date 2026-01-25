@@ -1,9 +1,8 @@
-#include "sokoban_base.h"
+
+#include <sokoban/sokoban.h>
 
 #include <cstdint>
 #include <sstream>
-
-#include "definitions.h"
 
 namespace sokoban {
 

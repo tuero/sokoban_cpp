@@ -1,6 +1,8 @@
 #ifndef SOKOBAN_BASE_H_
 #define SOKOBAN_BASE_H_
 
+#include <sokoban/definitions.h>
+
 #include <array>
 #include <cstdint>
 #include <format>
@@ -8,8 +10,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include "definitions.h"
 
 namespace sokoban {
 
