@@ -183,7 +183,7 @@ private:
 
 template <>
 struct std::formatter<sokoban::SokobanGameState> : std::formatter<std::string> {
-    auto format(sokoban::SokobanGameState s, format_context& ctx) const {
+    auto format(const sokoban::SokobanGameState& s, format_context& ctx) const {
         std::ostringstream oss;
         oss << s;
         return formatter<string>::format(std::format("{}", oss.str()), ctx);
