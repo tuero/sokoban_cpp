@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <sstream>
+#include <vector>
 
 namespace sokoban {
 
@@ -22,6 +23,8 @@ auto to_local_hash(int flat_size, Element el, int offset) noexcept -> uint64_t {
     result = (result ^ (result >> SPLIT64_S2)) * SPLIT64_C3;
     return result ^ (result >> SPLIT64_S3);
 }
+
+constexpr static std::array ALL_ACTIONS = {Action::kUp, Action::kRight, Action::kDown, Action::kLeft};
 }    // namespace
 
 SokobanGameState::SokobanGameState(const std::string& board_str) {
@@ -363,6 +366,30 @@ auto SokobanGameState::get_all_goal_indices() const noexcept -> std::vector<int>
 
 auto SokobanGameState::get_agent_index() const noexcept -> int {
     return agent_idx;
+}
+
+auto SokobanGameState::get_neighbor_tiling_bits(int idx) const -> std::bitset<11> {
+    std::bitset<11> encoded_tile;
+    if (idx < 0 || idx >= rows * cols) {
+        throw std::invalid_argument("Invalid index.");
+    }
+
+    std::size_t i = 0;
+    // bits 0..3 encode if wall on N,E,S,W of idx
+    for (const auto a : ALL_ACTIONS) {
+        encoded_tile[i++] =
+            InBounds(idx, a) && board_static[static_cast<std::size_t>(IndexFromAction(idx, a))] == Element::kWall;
+    }
+    // bits 4..7 encode if box on N,E,S,W of idx
+    for (const auto a : ALL_ACTIONS) {
+        encoded_tile[i++] = InBounds(idx, a) && is_box[static_cast<std::size_t>(IndexFromAction(idx, a))];
+    }
+    encoded_tile[i++] =
+        board_static[static_cast<std::size_t>(idx)] == Element::kGoal;    // bit 8 encodes if idx is on goal
+    encoded_tile[i++] = is_box[static_cast<std::size_t>(idx)];            // bit 9 encodes if idx is on box
+    encoded_tile[i++] = agent_idx == idx;                                 // bit 10 encodes if idx is on agent
+
+    return encoded_tile;
 }
 
 auto operator<<(std::ostream& os, const SokobanGameState& state) -> std::ostream& {

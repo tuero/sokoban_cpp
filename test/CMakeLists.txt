@@ -13,3 +13,6 @@ add_test(sokoban_test_speed sokoban_test_speed)
 add_executable(sokoban_test_throughput test_throughput.cpp)
 target_link_libraries(sokoban_test_throughput PUBLIC sokoban)
 add_test(sokoban_test_throughput sokoban_test_throughput)
+
+add_executable(sokoban_test_neighbor_bits test_neighbor_bits.cpp)
+target_link_libraries(sokoban_test_neighbor_bits PUBLIC sokoban)
