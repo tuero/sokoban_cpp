@@ -8,22 +8,6 @@
 namespace sokoban {
 
 namespace {
-// https://en.wikipedia.org/wiki/Xorshift
-// Portable RNG Seed
-constexpr uint64_t SPLIT64_S1 = 30;
-constexpr uint64_t SPLIT64_S2 = 27;
-constexpr uint64_t SPLIT64_S3 = 31;
-constexpr uint64_t SPLIT64_C1 = 0x9E3779B97f4A7C15;
-constexpr uint64_t SPLIT64_C2 = 0xBF58476D1CE4E5B9;
-constexpr uint64_t SPLIT64_C3 = 0x94D049BB133111EB;
-auto to_local_hash(int flat_size, Element el, int offset) noexcept -> uint64_t {
-    auto seed = static_cast<uint64_t>((flat_size * static_cast<int>(el)) + offset);
-    uint64_t result = seed + SPLIT64_C1;
-    result = (result ^ (result >> SPLIT64_S1)) * SPLIT64_C2;
-    result = (result ^ (result >> SPLIT64_S2)) * SPLIT64_C3;
-    return result ^ (result >> SPLIT64_S3);
-}
-
 constexpr static std::array ALL_ACTIONS = {Action::kUp, Action::kRight, Action::kDown, Action::kLeft};
 }    // namespace
 
@@ -124,22 +108,22 @@ SokobanGameState::SokobanGameState(const std::string& board_str) {
 
     // Init hash
     int flat_size = rows * cols;
-    zorb_hash = 0;
+    zorb_hash = {};
     // Static board
     {
         int i = -1;
         for (const auto& el : board_static) {
-            zorb_hash ^= to_local_hash(flat_size, el, ++i);
+            zorb_hash ^= to_local_hash<4>(flat_size, el, ++i);
         }
     }
     // Dynamic elements
-    zorb_hash ^= to_local_hash(flat_size, Element::kAgent, agent_idx);
+    zorb_hash ^= to_local_hash<4>(flat_size, Element::kAgent, agent_idx);
     {
         int i = -1;
         for (const auto b : is_box) {
             ++i;
             if (b) {
-                zorb_hash ^= to_local_hash(flat_size, Element::kBox, i);
+                zorb_hash ^= to_local_hash<4>(flat_size, Element::kBox, i);
             }
         }
     }
@@ -321,6 +305,10 @@ auto SokobanGameState::get_reward_signal() const noexcept -> uint64_t {
 }
 
 auto SokobanGameState::get_hash() const noexcept -> uint64_t {
+    return zorb_hash.low64();
+}
+
+auto SokobanGameState::get_hash256() const noexcept -> Zobrist256 {
     return zorb_hash;
 }
 
@@ -440,19 +428,19 @@ auto SokobanGameState::InBounds(int index, Action action) const noexcept -> bool
 
 void SokobanGameState::MoveAgent(Action action) noexcept {
     const auto flat_size = rows * cols;
-    zorb_hash ^= to_local_hash(flat_size, Element::kAgent, agent_idx);
+    zorb_hash ^= to_local_hash<4>(flat_size, Element::kAgent, agent_idx);
     agent_idx = IndexFromAction(agent_idx, action);
-    zorb_hash ^= to_local_hash(flat_size, Element::kAgent, agent_idx);
+    zorb_hash ^= to_local_hash<4>(flat_size, Element::kAgent, agent_idx);
 }
 
 void SokobanGameState::MoveBox(int box_index, Action action) noexcept {
     const auto flat_size = rows * cols;
-    zorb_hash ^= to_local_hash(flat_size, Element::kBox, box_index);
+    zorb_hash ^= to_local_hash<4>(flat_size, Element::kBox, box_index);
     is_box[static_cast<std::size_t>(box_index)] = false;
 
     // Move box
     const auto box_new_index = IndexFromAction(box_index, action);
-    zorb_hash ^= to_local_hash(flat_size, Element::kBox, box_new_index);
+    zorb_hash ^= to_local_hash<4>(flat_size, Element::kBox, box_new_index);
     is_box[static_cast<std::size_t>(box_new_index)] = true;
 
     // Check if on goal

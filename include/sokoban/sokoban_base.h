@@ -2,6 +2,7 @@
 #define SOKOBAN_BASE_H_
 
 #include <sokoban/definitions.h>
+#include <sokoban/zobrist.h>
 
 #include <array>
 #include <bitset>
@@ -28,7 +29,7 @@ public:
         int rows;
         int cols;
         int agent_idx;
-        uint64_t hash;
+        Zobrist256 hash;
         uint64_t reward_signal;
         std::vector<int> board_static;
         std::vector<bool> is_box;
@@ -114,6 +115,12 @@ public:
     [[nodiscard]] auto get_hash() const noexcept -> uint64_t;
 
     /**
+     * Get the 256-bit hash representation for the current state.
+     * @return hash value
+     */
+    [[nodiscard]] auto get_hash256() const noexcept -> Zobrist256;
+
+    /**
      * Get all indices of boxes
      * @return vector of indicies
      */
@@ -185,7 +192,7 @@ private:
     int rows = -1;
     int cols = -1;
     int agent_idx = -1;
-    uint64_t zorb_hash = 0;
+    Zobrist256 zorb_hash{};
     uint64_t reward_signal = 0;
     std::vector<Element> board_static;
     std::vector<bool> is_box;
