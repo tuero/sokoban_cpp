@@ -15,36 +15,35 @@ PYBIND11_MODULE(pysokoban, m) {
     using T = sokoban::SokobanGameState;
 
     py::class_<T>(m, "SokobanGameState")
-        .def(py::init<const std::string &>())
+        .def(py::init<const std::string&>())
         .def_readonly_static("name", &T::name)
         .def_readonly_static("num_actions", &sokoban::kNumActions)
         .def(py::self == py::self)    // NOLINT (misc-redundant-expression)
         .def(py::self != py::self)    // NOLINT (misc-redundant-expression)
-        .def("__hash__", [](const T &self) { return self.get_hash(); })
-        .def("__copy__", [](const T &self) { return T(self); })
-        .def("__deepcopy__", [](const T &self, py::dict) { return T(self); })
+        .def("__hash__", [](const T& self) { return self.get_hash(); })
+        .def("__copy__", [](const T& self) { return T(self); })
+        .def("__deepcopy__", [](const T& self, py::dict) { return T(self); })
         .def("__repr__",
-             [](const T &self) {
+             [](const T& self) {
                  std::stringstream stream;
                  stream << self;
                  return stream.str();
              })
         .def(py::pickle(
-            [](const T &self) {    // __getstate__
+            [](const T& self) {    // __getstate__
                 auto s = self.pack();
-                const auto hash_tuple = py::make_tuple(
-                    s.hash.word[0], s.hash.word[1], s.hash.word[2], s.hash.word[3]);
-                return py::make_tuple(
-                    s.rows, s.cols, s.agent_idx, hash_tuple, s.reward_signal, s.board_static, s.is_box);
+                const auto hash_tuple = py::make_tuple(s.hash.word[0], s.hash.word[1], s.hash.word[2], s.hash.word[3]);
+                return py::make_tuple(s.rows, s.cols, s.agent_idx, hash_tuple, s.reward_signal, s.board_static,
+                                      s.is_box);
             },
             [](py::tuple t) -> T {    // __setstate__
                 if (t.size() != 7) {
                     throw std::runtime_error("Invalid state");
                 }
                 T::InternalState s;
-                s.rows = t[0].cast<int>();                         // NOLINT(*-magic-numbers)
-                s.cols = t[1].cast<int>();                         // NOLINT(*-magic-numbers)
-                s.agent_idx = t[2].cast<int>();                    // NOLINT(*-magic-numbers)
+                s.rows = t[0].cast<int>();         // NOLINT(*-magic-numbers)
+                s.cols = t[1].cast<int>();         // NOLINT(*-magic-numbers)
+                s.agent_idx = t[2].cast<int>();    // NOLINT(*-magic-numbers)
                 const auto hash_tuple = t[3].cast<py::tuple>();
                 if (hash_tuple.size() != 4) {
                     throw std::runtime_error("Invalid hash tuple state");
@@ -59,7 +58,7 @@ PYBIND11_MODULE(pysokoban, m) {
                 return {std::move(s)};
             }))
         .def("apply_action",
-             [](T &self, int action) {
+             [](T& self, int action) {
                  if (action < 0 || action >= T::action_space_size()) {
                      throw std::invalid_argument("Invalid action.");
                  }
@@ -68,23 +67,23 @@ PYBIND11_MODULE(pysokoban, m) {
         .def("is_solution", &T::is_solution)
         .def("is_terminal", &T::is_solution)
         .def("observation_shape", &T::observation_shape)
-        .def("observation_shape", [](const T &self) { return self.observation_shape(false); })
+        .def("observation_shape", [](const T& self) { return self.observation_shape(false); })
         .def("get_observation",
-             [](const T &self) {
+             [](const T& self) {
                  py::array_t<float> out = py::cast(self.get_observation(false));
                  return out.reshape(self.observation_shape(false));
              })
         .def("image_shape", &T::image_shape)
-         .def("to_image",
-              [](T &self) {
-                  py::array_t<uint8_t> out = py::cast(self.to_image());
-                  const auto obs_shape = self.observation_shape();
-                  return out.reshape({static_cast<py::ssize_t>(obs_shape[1] * sokoban::SPRITE_HEIGHT),
-                                      static_cast<py::ssize_t>(obs_shape[2] * sokoban::SPRITE_WIDTH),
-                                      static_cast<py::ssize_t>(sokoban::SPRITE_CHANNELS)});
-              })
+        .def("to_image",
+             [](T& self) {
+                 py::array_t<uint8_t> out = py::cast(self.to_image());
+                 const auto obs_shape = self.observation_shape();
+                 return out.reshape({static_cast<py::ssize_t>(obs_shape[1] * sokoban::SPRITE_HEIGHT),
+                                     static_cast<py::ssize_t>(obs_shape[2] * sokoban::SPRITE_WIDTH),
+                                     static_cast<py::ssize_t>(sokoban::SPRITE_CHANNELS)});
+             })
         .def("get_hash256",
-             [](const T &self) {
+             [](const T& self) {
                  const auto hash = self.get_hash256();
                  return py::make_tuple(hash.word[0], hash.word[1], hash.word[2], hash.word[3]);
              })
