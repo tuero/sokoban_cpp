@@ -15,4 +15,4 @@ cmake.build-type = "Release"
 cmake.args = [
     "-DBUILD_PYTHON_MODULE=ON -DCMAKE_CXX_FLAGS='-g -O2 -fno-omit-frame-pointer'",
 ]
-cmake.verbose = true
+build.verbose = true

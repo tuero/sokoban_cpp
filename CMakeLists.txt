@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.23)
 
-project(sokoban VERSION 1.0.6)
+project(sokoban VERSION 1.0.7)
 
 option(BUILD_PYTHON_MODULE "Build the python library wrapper" OFF)
 

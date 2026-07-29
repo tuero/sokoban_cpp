@@ -67,11 +67,11 @@ PYBIND11_MODULE(pysokoban, m) {
         .def("is_solution", &T::is_solution)
         .def("is_terminal", &T::is_solution)
         .def("observation_shape", &T::observation_shape)
-        .def("observation_shape", [](const T& self) { return self.observation_shape(false); })
+        .def("observation_shape", [](const T& self) { return self.observation_shape(); })
         .def("get_observation",
              [](const T& self) {
-                 py::array_t<float> out = py::cast(self.get_observation(false));
-                 return out.reshape(self.observation_shape(false));
+                 py::array_t<float> out = py::cast(self.get_observation());
+                 return out.reshape(self.observation_shape());
              })
         .def("image_shape", &T::image_shape)
         .def("to_image",
